@@ -11,7 +11,17 @@ The watcher only detects a footer already present in a final response. It does n
 
 ## Installation
 
+The package is published to npm, so both harnesses can install it directly.
+
 ### Oh My Pi
+
+```sh
+omp plugin install amanai-reward-watcher
+```
+
+Then restart OMP. The plugin loader reads the `omp.extensions` manifest and loads the adapter.
+
+#### Manual alternative
 
 From a clone of this repository, copy the OMP adapter into your OMP user extensions:
 
@@ -31,14 +41,18 @@ Then restart OMP. It auto-discovers one-level extension directories under `~/.om
 
 ### Original Pi
 
-Clone this repository, then install it as a local Pi package:
+```sh
+pi install npm:amanai-reward-watcher
+```
+
+Pi reads the package's `pi.extensions` manifest and loads the Pi-native adapter.
+
+#### Local clone alternative
 
 ```sh
 git clone https://github.com/Fernado03/amanai-reward-watcher.git
 pi install ./amanai-reward-watcher
 ```
-
-Pi reads the package's `pi.extensions` manifest and loads the Pi-native adapter.
 
 ## Safety limits
 
