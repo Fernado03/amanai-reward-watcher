@@ -9,6 +9,37 @@ A dependency-free, passive Pi extension that watches completed assistant respons
 
 The watcher only detects a footer already present in a final response. It does not make rewards likely, free, or available.
 
+## Installation
+
+### Oh My Pi
+
+From a clone of this repository, copy the OMP adapter into your OMP user extensions:
+
+```powershell
+mkdir "$env:USERPROFILE\.omp\agent\extensions\amanai-reward"
+copy "extensions\amanai-reward\index.js" "$env:USERPROFILE\.omp\agent\extensions\amanai-reward\index.js"
+```
+
+macOS/Linux:
+
+```sh
+mkdir -p ~/.omp/agent/extensions/amanai-reward
+cp extensions/amanai-reward/index.js ~/.omp/agent/extensions/amanai-reward/index.js
+```
+
+Then restart OMP. It auto-discovers one-level extension directories under `~/.omp/agent/extensions`.
+
+### Original Pi
+
+Clone this repository, then install it as a local Pi package:
+
+```sh
+git clone https://github.com/Fernado03/amanai-reward-watcher.git
+pi install ./amanai-reward-watcher
+```
+
+Pi reads the package's `pi.extensions` manifest and loads the Pi-native adapter.
+
 ## Safety limits
 
 This package never makes network requests, navigates a browser or UI, uses credentials, stores or logs tokens, changes responses, farms requests, or redeems anything automatically. A notification is local only; any redemption is a deliberate manual action outside this package.
