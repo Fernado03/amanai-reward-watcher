@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 
 import ompExtension from "../extensions/amanai-reward/index.js";
@@ -23,15 +26,22 @@ function finalAssistant(content, stopReason = "stop") {
   return { messages: [{ role: "assistant", stopReason, content }] };
 }
 
-function notificationContext(hasUI = true) {
+function notificationContext(hasUI = true, cwd) {
   const notifications = [];
   return {
     notifications,
     ctx: {
       hasUI,
+      cwd,
       ui: { notify(message, level) { notifications.push([message, level]); } },
     },
   };
+}
+
+function tempContext(hasUI = true) {
+  const dir = mkdtempSync(join(tmpdir(), "amanai-test-"));
+  const { ctx, notifications } = notificationContext(hasUI, dir);
+  return { ctx, notifications, file: join(dir, ".amanai-rewards.txt"), cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
 function frozen(event) {
@@ -133,5 +143,89 @@ test("Pi rejects no-UI, non-stop, and non-text candidates without mutation", () 
     handlers.get("agent_settled")({}, notificationContext(true).ctx);
     assert.deepEqual(notifications, []);
     assert.equal(JSON.stringify(event), before);
+  }
+});
+
+test("OMP persists the detected key and still notifies", () => {
+  const key = "AMANAI-GACHA-Bravo1-Persist1";
+  const { handlers } = install(ompExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  try {
+    handlers.get("agent_end")(frozen(finalAssistant([{ type: "text", text: `Reward: ${key}` }])), ctx);
+    assert.equal(readFileSync(file, "utf8"), `${key}\n`);
+    assert.deepEqual(notifications, [[NOTICE, "info"]]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("OMP does not append a repeated detection of the same key", () => {
+  const key = "AMANAI-GACHA-Charlie2-Persist2";
+  const { handlers } = install(ompExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  try {
+    const event = () => frozen(finalAssistant([{ type: "text", text: `Reward: ${key}` }]));
+    handlers.get("agent_end")(event(), ctx);
+    handlers.get("agent_end")(event(), ctx);
+    assert.equal(readFileSync(file, "utf8"), `${key}\n`);
+    assert.deepEqual(notifications, [[NOTICE, "info"], [NOTICE, "info"]]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("OMP creates no file when nothing matches", () => {
+  const { handlers } = install(ompExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  try {
+    handlers.get("agent_end")(frozen(finalAssistant([{ type: "text", text: "No reward." }])), ctx);
+    assert.equal(existsSync(file), false);
+    assert.deepEqual(notifications, []);
+  } finally {
+    cleanup();
+  }
+});
+
+test("OMP does not append a key already present in the file", () => {
+  const key = "AMANAI-GACHA-Delta3-Persist4";
+  const { handlers } = install(ompExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  try {
+    writeFileSync(file, `${key}\n`);
+    handlers.get("agent_end")(frozen(finalAssistant([{ type: "text", text: `Reward: ${key}` }])), ctx);
+    assert.equal(readFileSync(file, "utf8"), `${key}\n`);
+    assert.deepEqual(notifications, [[NOTICE, "info"]]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Pi writes nothing at agent_end and persists with the notification at agent_settled", () => {
+  const key = "AMANAI-GACHA-Echo4-Persist5";
+  const { handlers } = install(piExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  try {
+    handlers.get("agent_end")(frozen(finalAssistant([{ type: "text", text: `Reward: ${key}` }])), ctx);
+    assert.equal(existsSync(file), false);
+    assert.deepEqual(notifications, []);
+
+    handlers.get("agent_settled")({}, ctx);
+    assert.equal(readFileSync(file, "utf8"), `${key}\n`);
+    assert.deepEqual(notifications, [[NOTICE, "info"]]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Pi creates no file when there is no candidate", () => {
+  const { handlers } = install(piExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  try {
+    handlers.get("agent_end")(frozen(finalAssistant([{ type: "text", text: "No reward." }])), ctx);
+    handlers.get("agent_settled")({}, ctx);
+    assert.equal(existsSync(file), false);
+    assert.deepEqual(notifications, []);
+  } finally {
+    cleanup();
   }
 });

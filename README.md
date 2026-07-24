@@ -6,6 +6,7 @@ A dependency-free, passive Pi extension that watches completed assistant respons
 
 - **Oh My Pi:** observes `agent_end` only after the response will not continue, then inspects the most recent successful assistant response.
 - **Original Pi:** collects a candidate at `agent_end` and delivers the notification at `agent_settled`.
+- Detected keys are appended, one per line, to `.amanai-rewards.txt` in the current project directory, deduplicated. Add `.amanai-rewards.txt` to your project's `.gitignore` so keys are not committed.
 
 The watcher only detects a footer already present in a final response. It does not make rewards likely, free, or available.
 
@@ -56,7 +57,7 @@ pi install ./amanai-reward-watcher
 
 ## Safety limits
 
-This package never makes network requests, navigates a browser or UI, uses credentials, stores or logs tokens, changes responses, farms requests, or redeems anything automatically. A notification is local only; any redemption is a deliberate manual action outside this package.
+This package never makes network requests, navigates a browser or UI, uses credentials, changes responses, farms requests, or redeems anything automatically. Detected keys are stored only in the local project's `.amanai-rewards.txt` file; a notification is local only and never contains the key, and any redemption is a deliberate manual action outside this package.
 
 ## Local development
 
