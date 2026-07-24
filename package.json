@@ -1,0 +1,40 @@
+{
+  "name": "amanai-reward-watcher",
+  "version": "0.1.0",
+  "description": "Passive local notification for Amanai reward tokens in final Pi responses.",
+  "type": "module",
+  "license": "MIT",
+  "repository": "https://github.com/Fernado03/amanai-reward-watcher",
+  "bugs": {
+    "url": "https://github.com/Fernado03/amanai-reward-watcher/issues"
+  },
+  "homepage": "https://github.com/Fernado03/amanai-reward-watcher",
+  "keywords": [
+    "oh-my-pi",
+    "pi-package",
+    "amanai",
+    "reward-watcher"
+  ],
+  "files": [
+    "extensions/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check": "node --check extensions/amanai-reward/index.js && node --check extensions/amanai-reward/pi.js",
+    "test": "node --test"
+  },
+  "omp": {
+    "extensions": [
+      "./extensions/amanai-reward/index.js"
+    ]
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/amanai-reward/pi.js"
+    ]
+  }
+}
