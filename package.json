@@ -4,7 +4,10 @@
   "description": "Passive local notification for Amanai reward tokens in final Pi responses.",
   "type": "module",
   "license": "MIT",
-  "repository": "https://github.com/Fernado03/amanai-reward-watcher",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fernado03/amanai-reward-watcher.git"
+  },
   "bugs": {
     "url": "https://github.com/Fernado03/amanai-reward-watcher/issues"
   },
