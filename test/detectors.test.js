@@ -54,10 +54,11 @@ function frozen(event) {
   });
 }
 
-test("OMP detects a standalone key only in the final successful assistant response without mutation", () => {
+test("OMP detects a standalone key only in the final successful assistant response without mutation", (t) => {
   const { handlers, registrations } = install(ompExtension);
   assert.deepEqual(registrations, ["agent_end"]);
-  const { ctx, notifications } = notificationContext();
+  const { ctx, notifications, cleanup } = tempContext();
+  t.after(cleanup);
   const event = frozen(finalAssistant([{ type: "text", text: `Reward: ${KEY}` }]));
   const before = JSON.stringify(event);
 
@@ -93,10 +94,11 @@ test("OMP skips continued, invalid, non-text, nonmatching, and non-final candida
   }
 });
 
-test("Pi defers one matching candidate until settlement, then clears it without mutation", () => {
+test("Pi defers one matching candidate until settlement, then clears it without mutation", (t) => {
   const { handlers, registrations } = install(piExtension);
   assert.deepEqual(registrations, ["agent_start", "agent_end", "agent_settled"]);
-  const { ctx, notifications } = notificationContext();
+  const { ctx, notifications, cleanup } = tempContext();
+  t.after(cleanup);
   const event = frozen(finalAssistant([{ type: "text", text: `Reward: ${KEY}` }]));
   const before = JSON.stringify(event);
 
