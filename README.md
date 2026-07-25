@@ -55,6 +55,24 @@ git clone https://github.com/Fernado03/amanai-reward-watcher.git
 pi install ./amanai-reward-watcher
 ```
 
+## Updating
+
+### Oh My Pi
+
+This package is installed directly from npm, not from an OMP marketplace. Force-install the same package name to replace the installed copy with the latest published version:
+
+```sh
+omp plugin install amanai-reward-watcher --force
+```
+
+Then restart OMP. `omp plugin upgrade` is for marketplace plugin IDs such as `name@marketplace`, so it does not apply to this package.
+
+### Original Pi
+
+```sh
+pi update npm:amanai-reward-watcher
+```
+
 ## Safety limits
 
 This package never makes network requests, navigates a browser or UI, uses credentials, changes responses, farms requests, or redeems anything automatically. Detected keys are stored only in the local project's `.amanai-rewards.txt` file; a notification is local only and never contains the key, and any redemption is a deliberate manual action outside this package.
