@@ -30,14 +30,16 @@ export default function amanaiRewardExtension(pi) {
     }
     if (message?.stopReason !== "stop" || !Array.isArray(message.content)) return;
 
-    for (const block of message.content) {
-      if (block?.type === "text" && typeof block.text === "string" && REWARD_KEY.test(block.text)) {
-        try {
-          persistKey(ctx, block.text.match(REWARD_KEY)[0]);
-        } catch {}
-        ctx?.ui?.notify?.(NOTICE, "info");
-        return;
-      }
+    const combined = message.content
+      .filter((block) => block?.type === "text" && typeof block.text === "string")
+      .map((block) => block.text)
+      .join("");
+    const match = REWARD_KEY.exec(combined);
+    if (match) {
+      try {
+        persistKey(ctx, match[0]);
+      } catch {}
+      ctx?.ui?.notify?.(NOTICE, "info");
     }
   });
 }

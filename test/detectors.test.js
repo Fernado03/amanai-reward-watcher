@@ -231,3 +231,117 @@ test("Pi creates no file when there is no candidate", () => {
     cleanup();
   }
 });
+
+test("OMP isolates a persistence failure and still notifies once", () => {
+  const key = "AMANAI-GACHA-Foxtrot5-Fail6";
+  const { handlers } = install(ompExtension);
+  const dir = mkdtempSync(join(tmpdir(), "amanai-test-"));
+  const cwdFile = join(dir, "not-a-directory");
+  writeFileSync(cwdFile, "seed\n");
+  const { ctx, notifications } = notificationContext(true, cwdFile);
+  try {
+    handlers.get("agent_end")(frozen(finalAssistant([{ type: "text", text: `Reward: ${key}` }])), ctx);
+    assert.deepEqual(notifications, [[NOTICE, "info"]]);
+    assert.equal(readFileSync(cwdFile, "utf8"), "seed\n");
+    assert.equal(existsSync(join(cwdFile, ".amanai-rewards.txt")), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("Pi isolates a settlement persistence failure, notifies once, and clears the candidate", () => {
+  const key = "AMANAI-GACHA-Golf6-Fail7";
+  const { handlers } = install(piExtension);
+  const dir = mkdtempSync(join(tmpdir(), "amanai-test-"));
+  const cwdFile = join(dir, "not-a-directory");
+  writeFileSync(cwdFile, "seed\n");
+  const { ctx, notifications } = notificationContext(true, cwdFile);
+  try {
+    handlers.get("agent_end")(frozen(finalAssistant([{ type: "text", text: `Reward: ${key}` }])), ctx);
+    assert.deepEqual(notifications, []);
+
+    handlers.get("agent_settled")({}, ctx);
+    assert.deepEqual(notifications, [[NOTICE, "info"]]);
+
+    handlers.get("agent_settled")({}, ctx);
+    assert.deepEqual(notifications, [[NOTICE, "info"]]);
+    assert.equal(readFileSync(cwdFile, "utf8"), "seed\n");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("OMP detects a key split across adjacent text blocks with interspersed non-text blocks", () => {
+  const key = "AMANAI-GACHA-Foxtrot5-Split6";
+  const { handlers } = install(ompExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  try {
+    handlers.get("agent_end")(frozen(finalAssistant([
+      { type: "text", text: "Reward: AMANAI-GACHA-Foxtrot" },
+      { type: "toolCall", id: "tool-1" },
+      { type: "text", text: "5-Split" },
+      { type: "toolCall", id: "tool-2" },
+      { type: "text", text: "6 end" },
+    ])), ctx);
+    assert.equal(readFileSync(file, "utf8"), `${key}\n`);
+    assert.deepEqual(notifications, [[NOTICE, "info"]]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Pi defers a key split across adjacent text blocks until agent_settled, persists it exactly once, then clears it", (t) => {
+  const key = "AMANAI-GACHA-Golf7-Split8";
+  const { handlers } = install(piExtension);
+  const { ctx, notifications, file, cleanup } = tempContext();
+  t.after(cleanup);
+  const split = () => frozen(finalAssistant([
+    { type: "text", text: "Reward: AMANAI-GACHA-Golf" },
+    { type: "toolCall", id: "tool-1" },
+    { type: "text", text: "7-Split" },
+    { type: "toolCall", id: "tool-2" },
+    { type: "text", text: "8 end" },
+  ]));
+
+  handlers.get("agent_end")(split(), ctx);
+  assert.equal(existsSync(file), false);
+  assert.deepEqual(notifications, []);
+
+  handlers.get("agent_settled")({}, ctx);
+  assert.equal(readFileSync(file, "utf8"), `${key}\n`);
+  assert.deepEqual(notifications, [[NOTICE, "info"]]);
+
+  handlers.get("agent_settled")({}, ctx);
+  assert.equal(readFileSync(file, "utf8"), `${key}\n`);
+  assert.deepEqual(notifications, [[NOTICE, "info"]]);
+});
+
+test("OMP and Pi reject keys whose block boundary breaks the token boundary, creating no file or notification", () => {
+  const invalidBoundaries = [
+    [
+      { type: "text", text: "Reward-" },
+      { type: "toolCall", id: "tool-1" },
+      { type: "text", text: "AMANAI-GACHA-Hotel8-Bad9" },
+    ],
+    [
+      { type: "text", text: "Reward: AMANAI-GACHA-Hotel8-Bad9" },
+      { type: "toolCall", id: "tool-1" },
+      { type: "text", text: "-cont" },
+    ],
+  ];
+
+  for (const content of invalidBoundaries) {
+    for (const extension of [ompExtension, piExtension]) {
+      const { handlers } = install(extension);
+      const { ctx, notifications, file, cleanup } = tempContext();
+      try {
+        handlers.get("agent_end")(frozen(finalAssistant(content)), ctx);
+        if (handlers.has("agent_settled")) handlers.get("agent_settled")({}, ctx);
+        assert.equal(existsSync(file), false);
+        assert.deepEqual(notifications, []);
+      } finally {
+        cleanup();
+      }
+    }
+  }
+});

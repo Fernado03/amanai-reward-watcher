@@ -37,14 +37,13 @@ export default function amanaiRewardExtension(pi) {
     }
     if (message?.stopReason !== "stop" || !Array.isArray(message.content)) return;
 
-    for (const block of message.content) {
-      if (block?.type === "text" && typeof block.text === "string") {
-        const match = block.text.match(REWARD_KEY);
-        if (match) {
-          candidate = match[0];
-          return;
-        }
-      }
+    const text = message.content
+      .filter((block) => block?.type === "text" && typeof block.text === "string")
+      .map((block) => block.text)
+      .join("");
+    const match = text.match(REWARD_KEY);
+    if (match) {
+      candidate = match[0];
     }
   });
 
